@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:async';
-import 'package:flutter/services.dart';
 
 void main() => runApp(MyApp());
 
@@ -24,6 +25,9 @@ class _SnakeGameState extends State<SnakeGame> {
   final int squaresPerCol = 40;
   final fontStyle = TextStyle(color: Colors.white, fontSize: 20);
   final randomGen = Random();
+  String? _message;
+  int key = 0;
+  int init =0;
 
   var snake = [
     [0, 1],
@@ -32,65 +36,6 @@ class _SnakeGameState extends State<SnakeGame> {
   var food = [0, 2];
   var direction = 'up';
   var isPlaying = false;
-
-    // The node used to request the keyboard focus.
-  final FocusNode _focusNode = FocusNode();
-  // The message to display.
-  String? _message;
-  // key for snake
-
-  // Focus nodes need to be disposed.
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  // Handles the key events from the Focus widget and updates the
-  // _message.
-  KeyEventResult _handleKeyEvent(FocusNode node, RawKeyEvent event) {
-    setState(() {
-      _message = '${event.logicalKey.debugName}';
-      if (event.logicalKey == LogicalKeyboardKey.keyS) {
-        direction = 'down';
-      }
-      if (event.logicalKey == LogicalKeyboardKey.keyZ) {
-        direction = 'up';
-      }
-      if (event.logicalKey == LogicalKeyboardKey.keyD) {
-        direction = 'right';
-      }
-      if (event.logicalKey == LogicalKeyboardKey.keyS) {
-        direction = 'left';
-      }
-      switch(direction) {
-        case 'up':
-          snake.insert(0, [snake.first[0], snake.first[1] - 1]);
-          break;
-        
-        case 'down':
-          snake.insert(0, [snake.first[0], snake.first[1] + 1]);
-          break;
-
-        case 'left':
-          snake.insert(0, [snake.first[0] - 1, snake.first[1]]);
-          break;
-
-        case 'right':
-          snake.insert(0, [snake.first[0] + 1, snake.first[1]]);
-          break;
-      }
-
-      if (snake.first[0] != food[0] || snake.first[1] != food[1]) {
-        snake.removeLast();
-      } else {
-        createFood();
-      }
-    });
-    return event.logicalKey == LogicalKeyboardKey.keyP
-        ? KeyEventResult.handled
-        : KeyEventResult.ignored;
-  }
 
   void startGame() {
     const duration = Duration(milliseconds: 300);
@@ -104,18 +49,28 @@ class _SnakeGameState extends State<SnakeGame> {
     createFood();
 
     isPlaying = true;
-    Timer.periodic(duration, (Timer timer) { 
+    Timer.periodic(duration, (Timer timer) {
+            if (key==0) {
+      snake.insert(0, [snake.first[0], snake.first[1] - 1]);
+      key = 1;
+      }
+      print(snake);
       moveSnake();
+      key = 0;
       if (checkGameOver()) {
         timer.cancel();
         endGame();
       }
     });
   }
-  
+
   void moveSnake() {
     setState(() {
-
+      if (snake.first[0] != food[0] || snake.first[1] != food[1]) {
+        snake.removeLast();
+      } else {
+        createFood();
+      }
     });
   }
 
@@ -147,6 +102,7 @@ class _SnakeGameState extends State<SnakeGame> {
 
   void endGame() {
     isPlaying = false;
+    key = 0;
 
     showDialog(
       context: context,
@@ -176,51 +132,78 @@ class _SnakeGameState extends State<SnakeGame> {
       body: Column(
         children: <Widget>[
           Expanded(
-            child: GestureDetector(
-              child: Focus(
-                onKey: _handleKeyEvent,
-                child: AspectRatio(
-                  aspectRatio: squaresPerRow / (squaresPerCol + 5),
-                  child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: squaresPerRow,
-                      ),
-                      itemCount: squaresPerRow * squaresPerCol,
-                      itemBuilder: (BuildContext context, int index) {
-                        var color;
-                        var x = index % squaresPerRow;
-                        var y = (index / squaresPerRow).floor();
+        child: RawKeyboardListener(
+          focusNode: FocusNode(),
+          onKey: (RawKeyEvent event,) {
+            // Handle the key event here
+            if (event is RawKeyDownEvent) {
+              _message = '${event.logicalKey.debugName}';
+              print(_message);
+              if (_message != 'Arrow Down' ) {
+                snake.insert(0, [snake.first[0], snake.first[1] - 1]);
+                snake.removeLast();
+                key = 1;             
+              }
+              if (_message != 'Arrow Up' ) {
+                snake.insert(0, [snake.first[0], snake.first[1] + 1]);
+                snake.removeLast();
+                key = 1; 
+              }
+              if (_message != 'Arrow Right' ) {
+                snake.insert(0, [snake.first[0] - 1, snake.first[1]]);
+                key = 1; 
+              }
+              if (_message != 'Arrow Left' ) {
+                snake.insert(0, [snake.first[0] + 1, snake.first[1]]);
+                key = 1; 
+              }
+              if (key==0) {
+              snake.insert(0, [snake.first[0], snake.first[1] - 1]);
+              key = 1;
+              }
+              
+            }
+          },
+            child: AspectRatio(
+              aspectRatio: squaresPerRow / (squaresPerCol + 5),
+                child: GridView.builder(
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: squaresPerRow,
+                    ),
+                    itemCount: squaresPerRow * squaresPerCol,
+                    itemBuilder: (BuildContext context, int index) {
+                      var color;
+                      var x = index % squaresPerRow;
+                      var y = (index / squaresPerRow).floor();
 
-                        bool isSnakeBody = false;
-                        for (var pos in snake) {
-                          if (pos[0] == x && pos[1] == y) {
-                            isSnakeBody = true;
-                            break;
-                          }
+                      bool isSnakeBody = false;
+                      for (var pos in snake) {
+                        if (pos[0] == x && pos[1] == y) {
+                          isSnakeBody = true;
+                          break;
                         }
+                      }
 
-                        if (snake.first[0] == x && snake.first[1] == y) {
-                          color = Colors.green;
-                        } else if (isSnakeBody) {
-                          color = Colors.green[200];
-                        } else if (food[0] == x && food[1] == y) {
-                          color = Colors.red;
-                        } else {
-                          color = Colors.grey[800];
-                        }
+                      if (snake.first[0] == x && snake.first[1] == y) {
+                        color = Colors.green;
+                      } else if (isSnakeBody) {
+                        color = Colors.green[200];
+                      } else if (food[0] == x && food[1] == y) {
+                        color = Colors.red;
+                      } else {
+                        color = Colors.grey[800];
+                      }
 
-                        return Container(
-                          margin: EdgeInsets.all(1),
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        );
-                      }),
-                ),
+                      return Container(
+                        margin: EdgeInsets.all(1),
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
               ),
-          
             ),
           ),
           Padding(
