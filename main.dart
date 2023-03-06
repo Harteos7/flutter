@@ -25,20 +25,18 @@ class _SnakeGameState extends State<SnakeGame> {
   final int squaresPerCol = 40;
   final fontStyle = TextStyle(color: Colors.white, fontSize: 20);
   final randomGen = Random();
-  String? _message;
-  int key = 0;
-  int init =0;
+  String? _message; // the keyboard Listener
+  var duration = Duration(milliseconds: 500); // time for a mouve
 
   var snake = [
     [0, 1],
     [0, 0]
   ];
   var food = [0, 2];
-  var direction = 'up';
-  var isPlaying = false;
+  var direction = 'up'; // first direction 
+  var isPlaying = false; // var for the game
 
   void startGame() {
-    const duration = Duration(milliseconds: 300);
 
     snake = [ // Snake head
       [(squaresPerRow / 2).floor(), (squaresPerCol / 2).floor()]
@@ -50,13 +48,10 @@ class _SnakeGameState extends State<SnakeGame> {
 
     isPlaying = true;
     Timer.periodic(duration, (Timer timer) {
-            if (key==0) {
-      snake.insert(0, [snake.first[0], snake.first[1] - 1]);
-      key = 1;
-      }
       print(snake);
-      moveSnake();
-      key = 0;
+      print(duration);
+      print('direction =' + direction);
+      moveSnake(duration);
       if (checkGameOver()) {
         timer.cancel();
         endGame();
@@ -64,12 +59,32 @@ class _SnakeGameState extends State<SnakeGame> {
     });
   }
 
-  void moveSnake() {
+  void moveSnake(var duration) { //Whe move the snake by the var direction and if the snake is not eating he loose the last circle of his body
     setState(() {
+      switch(direction) {
+        case 'up':
+          snake.insert(0, [snake.first[0], snake.first[1] - 1]);
+          break;
+        
+        case 'down':
+          snake.insert(0, [snake.first[0], snake.first[1] + 1]);
+          break;
+
+        case 'right':
+          snake.insert(0, [snake.first[0] + 1, snake.first[1]]);
+          break;
+
+        case 'left':
+          snake.insert(0, [snake.first[0] - 1, snake.first[1]]);
+          break;
+
+      }
       if (snake.first[0] != food[0] || snake.first[1] != food[1]) {
-        snake.removeLast();
+        snake.removeLast(); // function to lose weight
       } else {
-        createFood();
+        createFood(); // we multiply the bread
+        duration = duration - Duration(milliseconds: 50);
+        print(duration);
       }
     });
   }
@@ -81,8 +96,8 @@ class _SnakeGameState extends State<SnakeGame> {
     ];
   }
 
-  bool checkGameOver() {
-    if (!isPlaying
+  bool checkGameOver() { 
+    if (!isPlaying // We check that we are not out of the field
       || snake.first[1] < 0
       || snake.first[1] >= squaresPerCol
       || snake.first[0] < 0
@@ -91,7 +106,7 @@ class _SnakeGameState extends State<SnakeGame> {
       return true;
     }
 
-    for(var i=1; i < snake.length; ++i) {
+    for(var i=1; i < snake.length; ++i) { // Check that the snake still has weight
       if (snake[i][0] == snake.first[0] && snake[i][1] == snake.first[1]) {
         return true;
       }
@@ -102,13 +117,12 @@ class _SnakeGameState extends State<SnakeGame> {
 
   void endGame() {
     isPlaying = false;
-    key = 0;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Game Over'),
+          title: Text('Tes nul LOL'),
           content: Text(
             'Score: ${snake.length - 2}',
             style: TextStyle(fontSize: 20),
@@ -139,29 +153,18 @@ class _SnakeGameState extends State<SnakeGame> {
             if (event is RawKeyDownEvent) {
               _message = '${event.logicalKey.debugName}';
               print(_message);
-              if (_message != 'Arrow Down' ) {
-                snake.insert(0, [snake.first[0], snake.first[1] - 1]);
-                snake.removeLast();
-                key = 1;             
+              if (_message == 'Arrow Up' ) {
+                direction = 'up';    
               }
-              if (_message != 'Arrow Up' ) {
-                snake.insert(0, [snake.first[0], snake.first[1] + 1]);
-                snake.removeLast();
-                key = 1; 
+              if (_message == 'Arrow Left') {
+                direction = 'left';    
+              }  
+              if (_message == 'Arrow Right' ) {
+                direction = 'right';    
               }
-              if (_message != 'Arrow Right' ) {
-                snake.insert(0, [snake.first[0] - 1, snake.first[1]]);
-                key = 1; 
+              if (_message == 'Arrow Down') {
+                direction = 'down';             
               }
-              if (_message != 'Arrow Left' ) {
-                snake.insert(0, [snake.first[0] + 1, snake.first[1]]);
-                key = 1; 
-              }
-              if (key==0) {
-              snake.insert(0, [snake.first[0], snake.first[1] - 1]);
-              key = 1;
-              }
-              
             }
           },
             child: AspectRatio(
@@ -216,7 +219,7 @@ class _SnakeGameState extends State<SnakeGame> {
                         foregroundColor: isPlaying ? Colors.red : Colors.blue,
                       ), // 
                       child: Text(
-                        isPlaying ? 'End' : 'Start',
+                        isPlaying ? 'Start' : 'Start',
                         style: fontStyle,
                       ),
                       onPressed: () {
