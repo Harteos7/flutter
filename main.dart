@@ -1,10 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:async/async.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  await const FirebaseOptions(
+  apiKey: "AIzaSyBUiuITIqoTjhhIKaUfyvzaGgqREvMoGow",
+  authDomain: "snake-1fdc7.firebaseapp.com",
+  projectId: "snake-1fdc7",
+  storageBucket: "snake-1fdc7.appspot.com",
+  messagingSenderId: "490930402290",
+  appId: "1:490930402290:web:f0bd3c6234de7b6983716b",
+  measurementId: "G-VVWNWRSZ07"
+);
+  runApp(MyApp()); 
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -23,11 +38,12 @@ class SnakeGame extends StatefulWidget {
 class _SnakeGameState extends State<SnakeGame> {
   final int squaresPerRow = 20;
   final int squaresPerCol = 40;
-  final fontStyle = TextStyle(color: Colors.white, fontSize: 20);
+  final fontStyle = const TextStyle(color: Colors.white, fontSize: 20);
   final randomGen = Random();
   String? _message; // the keyboard Listener
-  var duration = Duration(milliseconds: 500); // time for a mouve
-
+  var duration = const Duration(milliseconds: 500); // time for a mouve
+  var duration2 = const Duration(milliseconds: 500); // time for a mouve
+  
   var snake = [
     [0, 1],
     [0, 0]
@@ -47,14 +63,25 @@ class _SnakeGameState extends State<SnakeGame> {
     createFood();
 
     isPlaying = true;
+    snakeTime();
+  }
+
+  void snakeTime() {
     Timer.periodic(duration, (Timer timer) {
       print(snake);
       print(duration);
       print('direction =' + direction);
-      moveSnake(duration);
+      moveSnake(duration2);
       if (checkGameOver()) {
         timer.cancel();
         endGame();
+      }
+      if (duration > duration2) {
+        if ( isPlaying = true ) {
+        duration = duration2 ;
+        timer.cancel();
+        snakeTime();
+        }
       }
     });
   }
@@ -83,8 +110,7 @@ class _SnakeGameState extends State<SnakeGame> {
         snake.removeLast(); // function to lose weight
       } else {
         createFood(); // we multiply the bread
-        duration = duration - Duration(milliseconds: 50);
-        print(duration);
+        duration2 = duration2 - const Duration(milliseconds: 50);
       }
     });
   }
@@ -116,20 +142,22 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void endGame() {
+    duration = const Duration(milliseconds: 500);
+    duration2 = const Duration(milliseconds: 500);
     isPlaying = false;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Tes nul LOL'),
+          title: const Text('Tes nul LOL'),
           content: Text(
             'Score: ${snake.length - 2}',
-            style: TextStyle(fontSize: 20),
+            style: const TextStyle(fontSize: 20),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Close'),
+              child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -170,7 +198,7 @@ class _SnakeGameState extends State<SnakeGame> {
             child: AspectRatio(
               aspectRatio: squaresPerRow / (squaresPerCol + 5),
                 child: GridView.builder(
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: squaresPerRow,
                     ),
@@ -199,7 +227,7 @@ class _SnakeGameState extends State<SnakeGame> {
                       }
 
                       return Container(
-                        margin: EdgeInsets.all(1),
+                        margin: const EdgeInsets.all(1),
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
@@ -210,14 +238,14 @@ class _SnakeGameState extends State<SnakeGame> {
             ),
           ),
           Padding(
-              padding: EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
                   TextButton(
                       style: TextButton.styleFrom(
                         foregroundColor: isPlaying ? Colors.red : Colors.blue,
-                      ), // 
+                      ),
                       child: Text(
                         isPlaying ? 'Start' : 'Start',
                         style: fontStyle,
