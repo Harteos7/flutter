@@ -1,27 +1,38 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:async/async.dart';
 import 'dart:math';
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firedart/firedart.dart';
+
+const apiKey = 'AIzaSyBUiuITIqoTjhhIKaUfyvzaGgqREvMoGow';
+const projectId = 'snake-1fdc7';
+
 
 void main() async {
-  await const FirebaseOptions(
-  apiKey: "AIzaSyBUiuITIqoTjhhIKaUfyvzaGgqREvMoGow",
-  authDomain: "snake-1fdc7.firebaseapp.com",
-  projectId: "snake-1fdc7",
-  storageBucket: "snake-1fdc7.appspot.com",
-  messagingSenderId: "490930402290",
-  appId: "1:490930402290:web:f0bd3c6234de7b6983716b",
-  measurementId: "G-VVWNWRSZ07"
-);
+  WidgetsFlutterBinding.ensureInitialized(); // initialisation
+  Firestore.initialize(projectId);
+  CollectionReference scoreCollection = Firestore.instance.collection('score');
+  final score = await scoreCollection.get();
+
+  print(score);
+
+  final connectivityResult = await (Connectivity().checkConnectivity()); // test internet
+  if (connectivityResult == ConnectivityResult.mobile) {
+    print('I am connected to a mobile network.');
+  } 
+  if (connectivityResult == ConnectivityResult.wifi) {
+    print('I am connected to a wifi network');
+  }
+  if (connectivityResult != ConnectivityResult.wifi && connectivityResult != ConnectivityResult.mobile) {
+    print('dead network');
+  }
+  
   runApp(MyApp()); 
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -41,8 +52,9 @@ class _SnakeGameState extends State<SnakeGame> {
   final fontStyle = const TextStyle(color: Colors.white, fontSize: 20);
   final randomGen = Random();
   String? _message; // the keyboard Listener
-  var duration = const Duration(milliseconds: 500); // time for a mouve
-  var duration2 = const Duration(milliseconds: 500); // time for a mouve
+  var duration = const Duration(milliseconds: 500); // 1er valeur du timer
+  var duration2 = const Duration(milliseconds: 500); // nouvelle valeur du timer quand le snake mange
+  String MessageEnd = 'rien'; // message de fin
   
   var snake = [
     [0, 1],
@@ -63,15 +75,15 @@ class _SnakeGameState extends State<SnakeGame> {
     createFood();
 
     isPlaying = true;
-    snakeTime();
+    snakeTime(); // le timer du jeu
   }
 
   void snakeTime() {
     Timer.periodic(duration, (Timer timer) {
-      print(snake);
-      print(duration);
-      print('direction =' + direction);
-      moveSnake(duration2);
+      print(snake); // debug
+      print(duration); // debug
+      print('direction =' + direction); // debug
+      moveSnake(duration2); // fonction pour bouger le snake 
       if (checkGameOver()) {
         timer.cancel();
         endGame();
@@ -110,7 +122,7 @@ class _SnakeGameState extends State<SnakeGame> {
         snake.removeLast(); // function to lose weight
       } else {
         createFood(); // we multiply the bread
-        duration2 = duration2 - const Duration(milliseconds: 50);
+        duration2 = duration2 * 0.9;
       }
     });
   }
@@ -145,12 +157,34 @@ class _SnakeGameState extends State<SnakeGame> {
     duration = const Duration(milliseconds: 500);
     duration2 = const Duration(milliseconds: 500);
     isPlaying = false;
+    print(snake.length - 2);
+    if (snake.length - 2 == 0) { // message de fin
+      MessageEnd = 'Tu es pas sérieux ?';
+    }
+    if ((snake.length - 2) < 5 && (snake.length - 2) > 0) {
+      MessageEnd = 'Pas ouf ouf';
+    }
+    if ((snake.length - 2) < 10 && (snake.length - 2) > 5) {
+      MessageEnd = 'ca va';
+    }
+    if ((snake.length - 2) < 15 && (snake.length - 2) > 10) {
+      MessageEnd = 'Bravo tu es tout ta fais commun';
+    }
+    if ((snake.length - 2) < 20 && (snake.length - 2) > 15) {
+      MessageEnd = 'Pas mal !';
+    }
+    if ((snake.length - 2) < 25 && (snake.length - 2) > 20) {
+      MessageEnd = 'Tu triche pas ?';
+    }
+    if ((snake.length - 2) > 25) {
+      MessageEnd = 'Bon ba GG';
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Tes nul LOL'),
+          title: Text(MessageEnd),
           content: Text(
             'Score: ${snake.length - 2}',
             style: const TextStyle(fontSize: 20),
@@ -247,7 +281,7 @@ class _SnakeGameState extends State<SnakeGame> {
                         foregroundColor: isPlaying ? Colors.red : Colors.blue,
                       ),
                       child: Text(
-                        isPlaying ? 'Start' : 'Start',
+                        isPlaying ? 'Restart' : 'Start',
                         style: fontStyle,
                       ),
                       onPressed: () {
